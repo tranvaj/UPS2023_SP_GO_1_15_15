@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tranvaj/UPS2023_SP_GO/util"
+	"github.com/tranvaj/UPS2023_SP_GO_1_15_15/util"
 )
 
 func main() {
