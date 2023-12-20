@@ -109,8 +109,9 @@ class TicTacToeGUI(IDispatchReceiver):
                 self.set_other_player_name_gui(recovery_message_args[2])
 
             self.reconnect_button.pack_forget()
-            self.recovery_finished = True
-
+            if self.recovery_finished == False:
+                self.recovery_finished = True
+                self.restart_pinger()
         
     def server_is_offline_gui(self):
         self.return_to_lobby_gui()
@@ -120,6 +121,7 @@ class TicTacToeGUI(IDispatchReceiver):
         self.disable_buttons()
         
     def send_recovery(self, interval: int = PingTime, amount: int = RecoveryMaxAttempts):
+        self.recovery_finished = False
         self.server_is_offline_gui()
         self.reconnect_button.pack_forget()
         for i in range(amount):
@@ -144,16 +146,12 @@ class TicTacToeGUI(IDispatchReceiver):
 
             self.tcp_client.send_data(self.client_status.name, MsgLoginOpcode)
             self.tcp_client.send_data("", MsgRecoveryOpcode)
-            if self.recovery_finished:
-                self.recovery_finished = False
-                self.restart_pinger()
-                return True
-            return False
+            return True
         
     def send_recovery_manual(self, event):
         if self.automatic_reconnect_failed:
             print(log_message("Trying to manually recover connection..."))
-            self.restart_pinger()
+            self.send_recovery()
             self.reconnect_button.pack_forget()
     
     def restart_pinger(self):
