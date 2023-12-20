@@ -83,6 +83,9 @@ class TicTacToeGUI(IDispatchReceiver):
         return self.pinger
     
     def recovery_process(self, recovery_message, recovery_message_args):
+        """
+        Updates GUI based on recovery message
+        """
         with self.recovery_mutex:
             if recovery_message == ClientMsgRecovery_InLobby:
                 self.return_to_lobby_gui()

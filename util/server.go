@@ -10,10 +10,15 @@ import (
 	"time"
 )
 
-var availableGamesList = make([]*TicTacToeGame, 0)
-var gameListMutex = &sync.Mutex{}
-var players = NewPlayers()
+var availableGamesList = make([]*TicTacToeGame, 0) //list of available games
+var gameListMutex = &sync.Mutex{}                  //mutex for availableGamesList (thread safety)
+var players = NewPlayers()                         //list of players
 
+// readAll reads data from the connection until the specified data length is reached.
+// It returns the read data, the total number of bytes read, and any error encountered.
+// If the data length exceeds the maximum allowed size, it returns an error.
+// If a timeout is specified, it sets a read deadline on the connection.
+// The read deadline is cleared before returning.
 func readAll(connection *net.Conn, dataLen int, timeout int) ([]byte, int, error) {
 	totalBytesRead := 0
 	conn := *connection
@@ -38,6 +43,9 @@ func readAll(connection *net.Conn, dataLen int, timeout int) ([]byte, int, error
 	return buffer, totalBytesRead, nil
 }
 
+// writeAll writes the given data to the provided connection until all bytes are written or an error occurs.
+// It sets a write deadline if a timeout is specified.
+// The function returns the total number of bytes written and any error encountered.
 func writeAll(connection *net.Conn, data []byte, timeout int) (int, error) {
 	totalBytesWritten := 0
 	conn := *connection
@@ -57,6 +65,16 @@ func writeAll(connection *net.Conn, data []byte, timeout int) (int, error) {
 	return totalBytesWritten, nil
 }
 
+// ProcessClient handles the communication with a client.
+// It reads messages from the client, processes the requested operation,
+// and sends back the response. If the client sends too many invalid operations,
+// the connection is closed.
+//
+// Parameters:
+// - connection: The network connection with the client.
+// - player: A pointer to the Player struct representing the client.
+//
+// Note: This function should be called as a goroutine to handle multiple clients concurrently.
 func ProcessClient(connection net.Conn, player *Player) {
 	defer connection.Close()
 	invalidOp := 0
@@ -99,7 +117,7 @@ func ProcessClient(connection net.Conn, player *Player) {
 		} else {
 			opMessage, err := processOperation(&player, &connection, opcode, strings.Split(string(data), ArgSep))
 			messageToSend := opMessage
-			success := true
+			success := true //represenets status of operation
 			if err != nil {
 				fmt.Println("could not process operation", err)
 				messageToSend = err.Error()
@@ -108,7 +126,7 @@ func ProcessClient(connection net.Conn, player *Player) {
 				messageToSend = opMessage + ArgSep + fmt.Sprint(defaultBoardSize) //send board size
 			}
 
-			if !(opMessage == "" && err == nil) { //if string is empty and err is nil, dont send anything (its handled in processOperation)
+			if !(opMessage == "" && err == nil) { //if string is empty and err is nil means "dont send response" (its handled in processOperation)
 				messageToSend = createOpCode(opcode, success, messageToSend)
 				msgArg := strings.Split(messageToSend, ArgSep)
 				msgLastArg := msgArg[len(msgArg)-1]
@@ -132,12 +150,23 @@ func ProcessClient(connection net.Conn, player *Player) {
 	}
 }
 
+// removeGame removes a game from the available games list based on the given gameId.
+// It acquires a lock on the gameListMutex to ensure thread safety.
+// The game is removed by slicing the availableGamesList and reassigning it.
 func removeGame(gameId int) {
 	gameListMutex.Lock()
 	defer gameListMutex.Unlock()
 	availableGamesList = append(availableGamesList[:gameId], availableGamesList[gameId+1:]...)
 }
 
+// playerDisconnected handles the disconnection of a player.
+//
+// It logs out the player, finds the game the player was in, and performs necessary actions based on the game state and the other player's status.
+// If the other player is ready for a game and the game is over, it sends a message to return to lobby (where the player can find another player to play with).
+// If the other player is in a game and the game is not over, it sends a message to the other player indicating that the opponent has disconnected.
+// It also sends a message to the other player indicating that the opponent has lost connection.
+//
+// Finally, it removes the player from the game and removes the game if necessary.
 func playerDisconnected(player *Player) {
 	players.Logout(player)
 	game := findGame(player)
@@ -166,6 +195,7 @@ func playerDisconnected(player *Player) {
 	}
 }
 
+// broadcastMsg sends the given message to all connections in the given slice.
 func broadcastMsg(connections []*net.Conn, msg string, timeout int) []error {
 	log.Println(fmt.Sprintf("Broadcasting message to %d clients: %s", len(connections), msg))
 	errs := make([]error, 0)
@@ -181,12 +211,14 @@ func broadcastMsg(connections []*net.Conn, msg string, timeout int) []error {
 	return errs
 }
 
+// sendMsg sends the given message to the given connection.
 func sendMsg(connection *net.Conn, msg string, timeout int) (int, error) {
 	bytesWritten, err := writeAll(connection, []byte(msg), timeout)
 	log.Println(fmt.Sprintf("Sent to %s message: %s", (*connection).RemoteAddr().String(), msg))
 	return bytesWritten, err
 }
 
+// createOpCode creates an protocol response with the given parameters.
 func createOpCode(opcode string, success bool, data string) string {
 	if success {
 		data = ClientMsgOk + ArgSep + data
@@ -196,6 +228,11 @@ func createOpCode(opcode string, success bool, data string) string {
 	return MsgMagic + opcode + fmt.Sprintf("%04d", len(data)) + data
 }
 
+// processOperation processes the operation based on the given opcode and data.
+// It updates the player's status and game state accordingly.
+// Handles recovery of player state in client.
+// If an error occurs during the operation, it returns an error message.
+// Otherwise, it returns a success message or an empty string.
 func processOperation(playerAddress **Player, conn *net.Conn, opcode string, data []string) (string, error) {
 	player := *playerAddress
 	var err error = nil
@@ -372,10 +409,9 @@ func processOperation(playerAddress **Player, conn *net.Conn, opcode string, dat
 			log.Println(err.Error())
 			return fmt.Sprintf("requesting play again (game id: %d)", getGameId(game)), nil
 		}
-		//broadcast game started
-		//log.Println("broadcasting game started")
+
 		otherPlayer := game.GetOtherPlayer(player)
-		//broadcast game started
+		//send game started with opponent name
 		_, err := sendMsg(player.Conn, createOpCode(MsgGameStartedOpcode, true, otherPlayer.Name), 0)
 		if err != nil {
 			log.Println("could not send game started to player one")
@@ -430,6 +466,9 @@ func processOperation(playerAddress **Player, conn *net.Conn, opcode string, dat
 	}
 }
 
+// handleRecoveryOpcode handles the recovery operation code for a player in a TicTacToe game.
+// It takes a player pointer and a game pointer as parameters and returns a string and an error.
+// The string represents the recovery option for the player, while the error indicates any error that occurred during the operation.
 func handleRecoveryOpcode(player *Player, game *TicTacToeGame) (string, error) {
 	option := ""
 	var err error
@@ -483,6 +522,7 @@ func handleRecoveryOpcode(player *Player, game *TicTacToeGame) (string, error) {
 	return option, nil
 }
 
+// informPlayerAboutDisconnect sends a message to the given player indicating that the opponent has disconnected.
 func informPlayerAboutDisconnect(player *Player) {
 	game := findGame(player)
 	if game == nil {
@@ -499,6 +539,9 @@ func informPlayerAboutDisconnect(player *Player) {
 	}
 }
 
+// ConnectionCloseHandler handles the closing of a connection.
+// Always one per player.
+// Closes connection and removes the player has not pinged in a while (timeouted).
 func ConnectionCloseHandler(player *Player) {
 	log.Println("!!! Starting connection close handler for player " + player.Name + "!!!")
 	for {
@@ -521,6 +564,7 @@ func ConnectionCloseHandler(player *Player) {
 	}
 }
 
+// Checks if player has disconnected
 func disconnectHandler(player *Player) {
 	playerCopy := *player
 	for {
@@ -542,7 +586,7 @@ func disconnectHandler(player *Player) {
 	}
 }
 
-// check ping duration for player
+// Sets player.Connected value based on PingTime and MaxNoPingReceived
 func updatePlayerConnected(player *Player) {
 	if player.Conn != nil {
 		if player.getTimeSinceLastPing() > time.Second*PingTime*MaxNoPingReceived {
@@ -555,7 +599,7 @@ func updatePlayerConnected(player *Player) {
 	}
 }
 
-// get game id in list of available games
+// Get game id in list of available games
 func getGameId(game *TicTacToeGame) int {
 	gameListMutex.Lock()
 	defer gameListMutex.Unlock()
@@ -567,6 +611,7 @@ func getGameId(game *TicTacToeGame) int {
 	return -1
 }
 
+// Finds game that player is in or joins existing game that is not full or creates new game if none found
 func operationJoin(player *Player) *TicTacToeGame {
 	game := findGame(player)
 	if game == nil {
@@ -579,7 +624,7 @@ func operationJoin(player *Player) *TicTacToeGame {
 	return game
 }
 
-// find game that player is in
+// Find game that player is in
 func findGame(player *Player) *TicTacToeGame {
 	gameListMutex.Lock()
 	defer gameListMutex.Unlock()
@@ -592,7 +637,7 @@ func findGame(player *Player) *TicTacToeGame {
 	return nil
 }
 
-// join game that is not full
+// Join game that is not full
 func joinGame(player *Player) *TicTacToeGame {
 	gameListMutex.Lock()
 	defer gameListMutex.Unlock()
@@ -606,7 +651,7 @@ func joinGame(player *Player) *TicTacToeGame {
 	return nil
 }
 
-// create new game
+// Create a new game
 func createGame() *TicTacToeGame {
 	newGame := NewTickTackToeGame(defaultBoardSize)
 	gameListMutex.Lock()

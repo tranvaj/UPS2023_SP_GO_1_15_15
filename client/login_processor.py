@@ -36,7 +36,7 @@ class LoginProcessor(IDispatchReceiver):
         currentTime = time.time()
         while not self.data_received:
             time.sleep(1)
-            if time.time() - currentTime > 10:
+            if time.time() - currentTime > 10: #if no response from server for 10 seconds, close client
                 messagebox.showerror("Error", "Server did not respond. Closing.")
                 exit()
         return self.data_received

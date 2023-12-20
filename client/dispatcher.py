@@ -18,6 +18,9 @@ class Dispatcher:
         self.tcp_client.send_data(data, opcode)
 
     def __receive_data(self) -> str:
+        """
+        Decides where to send the data received from the server.
+        """
         data = self.tcp_client.receive_data()
         opcode = data[1]
         reply = data[0].split(ArgSep)

@@ -11,13 +11,17 @@ type TicTacToeGame struct {
 	board          [][]int
 	players        [2]*Player
 	gameState      int
-	gameOverState  int
-	readyPlayerOne int
-	readyPlayerTwo int
-	moveCount      int
+	gameOverState  int // depends on constants set in const.go
+	readyPlayerOne int // 0 = not ready, 1 = ready
+	readyPlayerTwo int // 0 = not ready, 1 = ready
+	moveCount      int // number of moves made
 	mu             sync.Mutex
 }
 
+// Join adds a player to the TicTacToeGame.
+// It returns an error if the game has already started or is over.
+// If the game is not full, the player is added to the first available slot.
+// If the maximum number of players has been reached, an error is returned.
 func (g *TicTacToeGame) Join(player *Player) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -49,6 +53,7 @@ func (g *TicTacToeGame) GetGameWinner() *Player {
 	}
 }
 
+// GetOtherPlayer returns the other player in the game.
 func (g *TicTacToeGame) GetOtherPlayer(player *Player) *Player {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -59,6 +64,7 @@ func (g *TicTacToeGame) GetOtherPlayer(player *Player) *Player {
 	}
 }
 
+// If player wants to play again after game is over, this function is called.
 func (g *TicTacToeGame) PlayAgain(player Player) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -75,6 +81,7 @@ func (g *TicTacToeGame) PlayAgain(player Player) error {
 	return nil
 }
 
+// RemovePlayer removes a player from the game.
 func (g *TicTacToeGame) RemovePlayer(player *Player) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -85,6 +92,7 @@ func (g *TicTacToeGame) RemovePlayer(player *Player) {
 	}
 }
 
+// Handles a move from a player and sets the game state accordingly.
 func (g *TicTacToeGame) Move(player Player, x int, y int) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -135,6 +143,7 @@ func (g *TicTacToeGame) Move(player Player, x int, y int) error {
 	return nil
 }
 
+// GetBoardInParsableFormat returns the board in a parsable format.
 func (g *TicTacToeGame) GetBoardInParsableFormat() string {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -236,18 +245,22 @@ func NewTickTackToeGame(boardSize int) *TicTacToeGame {
 		moveCount:      0,
 	}
 }
+
+// IsFull returns true if both players are in the game.
 func (g *TicTacToeGame) IsFull() bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.players[0].Id != 0 && g.players[1].Id != 0
 }
 
+// IsReady returns true if both players are ready.
 func (g *TicTacToeGame) IsReady() bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.readyPlayerOne != 0 && g.readyPlayerTwo != 0
 }
 
+// Start starts the game.
 func (g *TicTacToeGame) Start() error {
 	if !g.IsFull() {
 		return errors.New("game not full")
@@ -262,6 +275,7 @@ func (g *TicTacToeGame) Start() error {
 	return nil
 }
 
+// Reset resets the game.
 func (g *TicTacToeGame) Reset(keepPlayers bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()

@@ -17,7 +17,7 @@ MsgJoinOpcode = "002"
 MsgMoveOpcode = "003"
 MsgPlayAgainOpcode = "004"
 
-#Broadcast messages for clients
+
 MsgGameStartedOpcode = "005"
 MsgReturnToStartOpcode = "006"
 MsgGameOverOpcode = "007"
@@ -35,7 +35,7 @@ MsgStatusOpcode = "015"
 
 #MsgOtherPlayerDisconnectedOpcode = "014"
 
-
+#extra data in messages for client
 ClientMsgGameGone = "gamegone"
 ClientMsgOk       = "ok"
 ClientMsgErr      = "err"
@@ -51,7 +51,7 @@ ClientMsgRecovery_InGame_OtherPlayAgain = "recovery_ingame_otherplayagain"
 ClientMsgRecovery_InGame_GameOver       = "recovery_ingame_gameover"
 
 
-
+#length of message header
 MsgHeaderLen = len(MsgMagic) + len(MsgLoginOpcode) + MaxMsgDataLen
 
 

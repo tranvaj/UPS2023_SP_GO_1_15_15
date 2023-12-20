@@ -8,21 +8,22 @@ import (
 )
 
 type Player struct {
-	Id                int
-	Name              string
-	Conn              *net.Conn
-	ClientId          int
-	TimeSinceLastPing time.Time
-	Status            int
-	Connected         bool
+	Id                int       // 0 means not invalid or empty player
+	Name              string    // name of the player
+	Conn              *net.Conn // connection of the player
+	ClientId          int       // client id of the player (kinda useless but whatever)
+	TimeSinceLastPing time.Time // time since last ping
+	Status            int       // status of the player
+	Connected         bool      // is player connected
 }
 
 type Players struct {
-	PlayerId int
-	Players  []*Player
-	mu       sync.Mutex
+	PlayerId int        // id of the player
+	Players  []*Player  // slice of players (ptr)
+	mu       sync.Mutex // mutex for thread safety
 }
 
+// Gets duration since last ping
 func (q *Player) getTimeSinceLastPing() time.Duration {
 	return time.Since(q.TimeSinceLastPing)
 }
@@ -68,6 +69,9 @@ func (q *Players) GetPlayerByClientId(clientId int) *Player {
 	return nil
 }
 
+// Login searches for a player with the specified name in the Players and updates their connection information.
+// If a player with the specified name is found, their connection, last ping time is updated and the player is returned.
+// If no player with the specified name is found, an error is returned.
 func (q *Players) Login(conn *net.Conn, name string, player *Player) (*Player, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -81,7 +85,8 @@ func (q *Players) Login(conn *net.Conn, name string, player *Player) (*Player, e
 	return nil, errors.New("player not found")
 }
 
-// conn must be already set and clientid
+// Does not set player.Conn and client id
+// Appends player to the end of the slice
 func (q *Players) AddNewPlayer(player *Player) error {
 	if q.getPlayersLen() >= MaxClients {
 		return errors.New("max number of players reached")
@@ -104,6 +109,7 @@ func (q *Players) AddNewPlayer(player *Player) error {
 	return nil
 }
 
+// Removes player from Players
 func (q *Players) Logout(player *Player) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
