@@ -150,9 +150,8 @@ class TicTacToeGUI(IDispatchReceiver):
     def send_recovery_manual(self, event):
         if self.automatic_reconnect_failed:
             print(log_message("Trying to manually recover connection..."))
-            if self.try_recover():
-                self.reconnect_button.pack_forget()
-                self.automatic_reconnect_failed = False
+            self.restart_pinger()
+            self.reconnect_button.pack_forget()
     
     def restart_pinger(self):
         self.pinger.set_connection_online(True)
