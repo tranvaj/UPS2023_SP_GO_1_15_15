@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
-	"github.com/tranvaj/UPS2023_SP_GO_1_15_15/util"
+	"github.com/tranvaj/UPS2023_SP_GO/util"
 )
 
 func main() {
+	var clientId int = 1
+
 	fmt.Println("Starting " + util.ConnType + " server on " + util.ConnHost + ":" + util.ConnPort)
 	l, err := net.Listen(util.ConnType, util.ConnHost+":"+util.ConnPort)
 	if err != nil {
@@ -23,10 +26,11 @@ func main() {
 			fmt.Println("Error connecting:", err.Error())
 			return
 		}
-		fmt.Println("Client connected.")
-
+		player := &util.Player{Conn: &c, ClientId: clientId, TimeSinceLastPing: time.Now()}
+		//fmt.Println("Client connected.")
 		fmt.Println("Client " + c.RemoteAddr().String() + " connected.")
-
-		go util.ProcessClient(c)
+		clientId++
+		//go util.ConnectionCloseHandler(player)
+		go util.ProcessClient(c, player)
 	}
 }

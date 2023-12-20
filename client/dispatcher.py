@@ -3,7 +3,7 @@ import sys
 import threading
 from IDispatchReceiver import IDispatchReceiver
 from connection import TCPClient
-from const import ArgSep, MsgContinueOpcode, MsgGameOverOpcode, MsgGameStartedOpcode, MsgJoinOpcode, MsgLoginOpcode, MsgMoveOpcode, MsgPauseOpcode, MsgPingOpcode, MsgPlayAgainOpcode, MsgRecoveryOpcode, MsgReturnToStartOpcode, MsgYourTurnOpcode
+from const import ArgSep, MsgContinueOpcode, MsgGameOverOpcode, MsgGameStartedOpcode, MsgJoinOpcode, MsgLoginOpcode, MsgMoveOpcode, MsgPauseOpcode, MsgPingOpcode, MsgPlayAgainOpcode, MsgRecoveryOpcode, MsgReturnToStartOpcode, MsgStatusOpcode, MsgYourTurnOpcode, PingTime
 from game_gui import TicTacToeGUI
 import select
 
@@ -24,9 +24,7 @@ class Dispatcher:
         reply_status = reply[0]
         reply_msg = reply[1:]
         
-        if self.login == None:
-            raise Exception("login gui doesn't exist")      
-        elif opcode == MsgLoginOpcode:
+        if opcode == MsgLoginOpcode and self.login != None:
             self.login.receive_from_dispatcher(opcode, reply_status, reply_msg)
         elif self.game_gui == None:
             raise Exception("game gui doesn't exist")
@@ -52,6 +50,8 @@ class Dispatcher:
             self.game_gui.receive_from_dispatcher(opcode, reply_status, reply_msg)
         elif opcode == MsgContinueOpcode:
             self.game_gui.receive_from_dispatcher(opcode, reply_status, reply_msg)
+        elif opcode == MsgStatusOpcode:
+            self.game_gui.receive_from_dispatcher(opcode, reply_status, reply_msg)
             
             
         return data
@@ -74,7 +74,7 @@ class Dispatcher:
         #use select to listen for data from server
         while True:
             try:
-                ready = select.select([self.tcp_client.client_socket], [], [], None)
+                ready = select.select([self.tcp_client.client_socket], [], [], PingTime)
                 if ready[0]:
                     self.__receive_data()
             except Exception as e:

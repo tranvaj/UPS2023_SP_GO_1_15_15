@@ -8,7 +8,7 @@ MaxClients = 2
 ArgSep = ";"
 PingTime          = 3
 MaxNoPingReceived = 3
-RecoveryMaxAttempts = 5
+RecoveryMaxAttempts = 50
 
 # Message constants
 MsgMagic = "KIVUPS"
@@ -31,6 +31,8 @@ MsgPingOpcode = "011"
 MsgRecoveryOpcode = "012"
 MsgPauseOpcode = "013"
 MsgContinueOpcode = "014"
+MsgStatusOpcode = "015"
+
 #MsgOtherPlayerDisconnectedOpcode = "014"
 
 

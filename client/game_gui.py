@@ -8,7 +8,7 @@ from IDispatchReceiver import IDispatchReceiver
 from client_status import ClientStatus
 
 from connection import TCPClient
-from const import ClientMsgErr, ClientMsgGameGone, ClientMsgOk, ClientMsgRecovery_InGame_GameOver, ClientMsgRecovery_InGame_OtherPlayAgain, ClientMsgRecovery_InGame_OtherTurn, ClientMsgRecovery_InGame_YourTurn, ClientMsgRecovery_InLobby, ClientMsgRecovery_ReadyForGame, MsgContinueOpcode, MsgPauseOpcode, MsgRecoveryOpcode, PingTime, RecoveryMaxAttempts, rowSep, colSep, MsgGameOverOpcode, MsgGameStartedOpcode, MsgJoinOpcode, MsgMoveOpcode, MsgOkOpcode, MsgPlayAgainOpcode, MsgReturnToStartOpcode, MsgYourTurnOpcode
+from const import ClientMsgErr, ClientMsgGameGone, ClientMsgOk, ClientMsgRecovery_InGame_GameOver, ClientMsgRecovery_InGame_OtherPlayAgain, ClientMsgRecovery_InGame_OtherTurn, ClientMsgRecovery_InGame_YourTurn, ClientMsgRecovery_InLobby, ClientMsgRecovery_ReadyForGame, MsgContinueOpcode, MsgLoginOpcode, MsgPauseOpcode, MsgRecoveryOpcode, MsgStatusOpcode, PingTime, RecoveryMaxAttempts, rowSep, colSep, MsgGameOverOpcode, MsgGameStartedOpcode, MsgJoinOpcode, MsgMoveOpcode, MsgOkOpcode, MsgPlayAgainOpcode, MsgReturnToStartOpcode, MsgYourTurnOpcode
 from pinger import Pinger
 
 class TicTacToeGUI(IDispatchReceiver):
@@ -105,11 +105,8 @@ class TicTacToeGUI(IDispatchReceiver):
                 self.gameover_gui(recovery_message_args[1])
                 self.set_other_player_name_gui(recovery_message_args[2])
 
-            self.recovery_finished = True
             self.reconnect_button.pack_forget()
-            if self.automatic_reconnect_failed:
-                self.restart_pinger()
-                self.automatic_reconnect_failed = False
+            self.recovery_finished = True
 
         
     def server_is_offline_gui(self):
@@ -125,24 +122,37 @@ class TicTacToeGUI(IDispatchReceiver):
         for i in range(amount):
             time.sleep(interval)
             print(log_message("Trying to automatically recover connection. Attempt " + str(i+1) + " of " + str(amount) + "..."))
-            with self.recovery_mutex:    
-                self.tcp_client.send_data("", MsgRecoveryOpcode)
-                if self.recovery_finished:
-                    #if no exception is thrown, server is online
-                    self.restart_pinger()
-                    self.reconnect_button.pack_forget()
-                    self.recovery_finished = False
-                    self.automatic_reconnect_failed = False
-                    return
+            if self.try_recover():
+                self.reconnect_button.pack_forget()
+                self.automatic_reconnect_failed = False
+                return
         self.reconnect_button.pack()
         self.info_label.config(text="Automatic reconnect failed. Click RECONNECT to try reconnect manually.")
         self.info_label.update()
         self.automatic_reconnect_failed = True
+
+    def try_recover(self) -> bool:
+        with self.recovery_mutex:
+            try:
+                self.tcp_client.reconnect()    
+            except Exception as e:
+                print(log_message("Attempt failed: " + str(e)))
+                return False
+
+            self.tcp_client.send_data(self.client_status.name, MsgLoginOpcode)
+            self.tcp_client.send_data("", MsgRecoveryOpcode)
+            if self.recovery_finished:
+                self.recovery_finished = False
+                self.restart_pinger()
+                return True
+            return False
         
     def send_recovery_manual(self, event):
         if self.automatic_reconnect_failed:
             print(log_message("Trying to manually recover connection..."))
-            self.tcp_client.send_data("", MsgRecoveryOpcode)
+            if self.try_recover():
+                self.reconnect_button.pack_forget()
+                self.automatic_reconnect_failed = False
     
     def restart_pinger(self):
         self.pinger.set_connection_online(True)
@@ -214,6 +224,12 @@ class TicTacToeGUI(IDispatchReceiver):
                 self.set_status_label_gui(log_message("Other player reconnected, can continue"))
             else:
                 print("error: " + reply_message)
+        elif opcode == MsgStatusOpcode:
+            if reply_status == ClientMsgOk:
+                self.set_status_label_gui(log_message("Opponent has lost connection."))
+            else:
+                print("error: " + reply_message)
+            
 
     def game_move(self, event, x, y):
         # Send the x, y position of the Tic Tac Toe move

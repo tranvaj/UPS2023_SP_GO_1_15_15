@@ -2,7 +2,6 @@ package util
 
 import (
 	"errors"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,13 +25,13 @@ func (g *TicTacToeGame) Join(player *Player) error {
 		return errors.New("game already started or over")
 	}
 	//check if game is full
-	if g.players[0].id == 0 {
+	if g.players[0].Id == 0 {
 		g.players[0] = player
 		g.readyPlayerOne = 1
 		return nil
 	}
 
-	if g.players[1].id == 0 {
+	if g.players[1].Id == 0 {
 		g.players[1] = player
 		g.readyPlayerTwo = 1
 		return nil
@@ -53,7 +52,7 @@ func (g *TicTacToeGame) GetGameWinner() *Player {
 func (g *TicTacToeGame) GetOtherPlayer(player *Player) *Player {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.players[0].id == player.id {
+	if g.players[0].Id == player.Id {
 		return g.players[1]
 	} else {
 		return g.players[0]
@@ -66,9 +65,9 @@ func (g *TicTacToeGame) PlayAgain(player Player) error {
 	if g.gameState != GameOver {
 		return errors.New("game not over")
 	}
-	if g.players[0].id == player.id {
+	if g.players[0].Id == player.Id {
 		g.readyPlayerOne = 1
-	} else if g.players[1].id == player.id {
+	} else if g.players[1].Id == player.Id {
 		g.readyPlayerTwo = 1
 	} else {
 		return errors.New("player not in game")
@@ -79,9 +78,9 @@ func (g *TicTacToeGame) PlayAgain(player Player) error {
 func (g *TicTacToeGame) RemovePlayer(player *Player) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.players[0].id == player.id {
+	if g.players[0].Id == player.Id {
 		*g.players[0] = Player{}
-	} else if g.players[1].id == player.id {
+	} else if g.players[1].Id == player.Id {
 		*g.players[1] = Player{}
 	}
 }
@@ -102,10 +101,10 @@ func (g *TicTacToeGame) Move(player Player, x int, y int) error {
 		return errors.New("field already occupied")
 	}
 	//check if player is allowed to move
-	if g.gameState == WaitingForPlayerOneMove && player.id == g.players[0].id {
-		g.board[x][y] = player.id
-	} else if g.gameState == WaitingForPlayerTwoMove && player.id == g.players[1].id {
-		g.board[x][y] = player.id
+	if g.gameState == WaitingForPlayerOneMove && player.Id == g.players[0].Id {
+		g.board[x][y] = player.Id
+	} else if g.gameState == WaitingForPlayerTwoMove && player.Id == g.players[1].Id {
+		g.board[x][y] = player.Id
 	} else {
 		return errors.New("not players turn")
 	}
@@ -121,7 +120,7 @@ func (g *TicTacToeGame) Move(player Player, x int, y int) error {
 	//check win
 	win, _ := g.checkWin(player)
 	if win {
-		if player.id == g.players[0].id {
+		if player.Id == g.players[0].Id {
 			g.gameOverState = PlayerOneWin
 		} else {
 			g.gameOverState = PlayerTwoWin
@@ -133,7 +132,6 @@ func (g *TicTacToeGame) Move(player Player, x int, y int) error {
 		g.gameOverState = Draw
 		g.gameState = GameOver
 	}
-	log.Println(g.gameState)
 	return nil
 }
 
@@ -144,9 +142,9 @@ func (g *TicTacToeGame) GetBoardInParsableFormat() string {
 	var result string
 	for _, row := range g.board {
 		for i, col := range row {
-			if g.players[0].id == col {
+			if g.players[0].Id == col {
 				col = 1
-			} else if g.players[1].id == col {
+			} else if g.players[1].Id == col {
 				col = 2
 			} else {
 				col = 0
@@ -168,7 +166,7 @@ func (g *TicTacToeGame) checkWin(player Player) (bool, Player) {
 	for i := 0; i < len(g.board); i++ {
 		win := true
 		for j := 0; j < len(g.board); j++ {
-			if g.board[i][j] != player.id {
+			if g.board[i][j] != player.Id {
 				win = false
 				break
 			}
@@ -182,7 +180,7 @@ func (g *TicTacToeGame) checkWin(player Player) (bool, Player) {
 	for i := 0; i < len(g.board); i++ {
 		win := true
 		for j := 0; j < len(g.board); j++ {
-			if g.board[j][i] != player.id {
+			if g.board[j][i] != player.Id {
 				win = false
 				break
 			}
@@ -195,7 +193,7 @@ func (g *TicTacToeGame) checkWin(player Player) (bool, Player) {
 	// check diagonal
 	win := true
 	for i := 0; i < len(g.board); i++ {
-		if g.board[i][i] != player.id {
+		if g.board[i][i] != player.Id {
 			win = false
 			break
 		}
@@ -207,7 +205,7 @@ func (g *TicTacToeGame) checkWin(player Player) (bool, Player) {
 	// check anti-diagonal
 	win = true
 	for i := 0; i < len(g.board); i++ {
-		if g.board[i][len(g.board)-1-i] != player.id {
+		if g.board[i][len(g.board)-1-i] != player.Id {
 			win = false
 			break
 		}
@@ -241,7 +239,7 @@ func NewTickTackToeGame(boardSize int) *TicTacToeGame {
 func (g *TicTacToeGame) IsFull() bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return g.players[0].id != 0 && g.players[1].id != 0
+	return g.players[0].Id != 0 && g.players[1].Id != 0
 }
 
 func (g *TicTacToeGame) IsReady() bool {

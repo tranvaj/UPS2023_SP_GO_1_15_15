@@ -2,6 +2,7 @@ import socket
 import time
 
 from const import MsgHeaderLen, MsgMagic, MsgLoginOpcode
+from message_formatter import log_message
 
 class TCPClient:
     def __init__(self, server_ip, server_port):
@@ -27,21 +28,21 @@ class TCPClient:
         if ping:
             try:
                 self.client_socket.sendall(bytes(msg, "utf-8"))
-                print("Sent ping." + time.strftime("%H:%M:%S", time.localtime()))
+                print(log_message("Sent ping"))
             except Exception as e:
                 print("Could not send ping: " + str(e))
         else:
             try:
                 self.client_socket.sendall(bytes(msg, "utf-8"))
             except Exception as e:
-                print("Could not send data: " + str(e))
+                print(log_message("Could not send data: " + str(e)))
     def set_block_send(self, block_send):
         self.block_send = block_send
         
     def receive_data(self):
         # Receive header first
         msg = str(self.client_socket.recv(MsgHeaderLen), "utf-8")
-        print(msg)
+        print(log_message(f"Received header: {msg}"))
 
         # Get magic
         magic = msg[:len(MsgMagic)]
@@ -64,12 +65,19 @@ class TCPClient:
         data = self.client_socket.recv(data_len)
         data = data.decode("utf-8")
 
-        print("Received data:", data)
+        print(log_message("Received data:" + data))
         return (data, opcode)
     
     def set_timeout(self, timeout):
         self.client_socket.settimeout(timeout)
 
+    def reconnect(self):
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try: 
+            self.client_socket.connect((self.server_ip, self.server_port))
+        except Exception as e:
+            print("SOMETHING WRONG: " + str(e))
+            raise e
 
     def close(self):
         self.client_socket.close()
