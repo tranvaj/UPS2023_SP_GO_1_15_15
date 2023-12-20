@@ -89,7 +89,7 @@ func ProcessClient(connection net.Conn, player *Player) {
 		opcode := string(msg[len(MsgMagic) : len(MsgMagic)+len(MsgLoginOpcode)])
 		if msgHeader != MsgMagic {
 			fmt.Println("msg header was incorrect")
-			continue
+			return
 		}
 
 		dataLen, err := strconv.Atoi(string(msg[len(MsgMagic)+len(MsgLoginOpcode):]))
@@ -156,6 +156,10 @@ func ProcessClient(connection net.Conn, player *Player) {
 func removeGame(gameId int) {
 	gameListMutex.Lock()
 	defer gameListMutex.Unlock()
+	if gameId < 0 {
+		log.Println("Game doesn't exist")
+		return
+	}
 	availableGamesList = append(availableGamesList[:gameId], availableGamesList[gameId+1:]...)
 }
 
