@@ -1,5 +1,5 @@
 # Connection constants
-ConnHost = "localhost"
+ConnHost = "192.168.0.148"
 ConnPort = 8080
 ConnType = "tcp"
 MaxDataLen = 128
@@ -8,7 +8,7 @@ MaxClients = 2
 ArgSep = ";"
 PingTime          = 3
 MaxNoPingReceived = 3
-RecoveryMaxAttempts = 50
+RecoveryMaxAttempts = 5
 
 # Message constants
 MsgMagic = "KIVUPS"
@@ -58,7 +58,7 @@ MsgHeaderLen = len(MsgMagic) + len(MsgLoginOpcode) + MaxMsgDataLen
 # Game constants
 colSep           = "|"
 rowSep           = "--"
-defaultBoardSize = 3
+defaultBoardSize = 5
 WaitingForPlayersReady = 1
 WaitingForPlayerOneMove = 2
 WaitingForPlayerTwoMove = 3

@@ -33,6 +33,10 @@ class LoginProcessor(IDispatchReceiver):
         self.data_received = True
 
     def wait_for_data(self):
+        currentTime = time.time()
         while not self.data_received:
             time.sleep(1)
+            if time.time() - currentTime > 10:
+                messagebox.showerror("Error", "Server did not respond. Closing.")
+                exit()
         return self.data_received

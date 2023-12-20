@@ -1,7 +1,7 @@
 package util
 
 const (
-	ConnHost                   = "localhost"
+	ConnHost                   = "192.168.0.148"
 	ConnPort                   = "8080"
 	ConnType                   = "tcp"
 	MaxDataLen                 = 128
@@ -11,7 +11,7 @@ const (
 	MaxInvalidOp               = 5
 	PingTime                   = 3
 	MaxNoPingReceived          = 3  //if 3 pings are not received, client is disconnected
-	MaxSecondsBeforeDisconnect = 20 //time before completely disconnecting client, must be bigger than PingTime*MaxNoPingReceived
+	MaxSecondsBeforeDisconnect = 80 //time before completely disconnecting client, must be bigger than PingTime*MaxNoPingReceived
 
 	//Size of message (msgdatalen) is a 4 digit number -> 0 ... 9999 bytes
 	// maxmsdgdatalen says how large data part is
