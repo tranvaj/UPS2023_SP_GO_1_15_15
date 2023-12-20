@@ -549,6 +549,7 @@ func informPlayerAboutDisconnect(player *Player) {
 func ConnectionCloseHandler(player *Player) {
 	log.Println("!!! Starting connection close handler for player " + player.Name + "!!!")
 	for {
+		time.Sleep(time.Second * PingTime)
 		if player.getTimeSinceLastPing() > time.Second*MaxSecondsBeforeDisconnect {
 			log.Println(fmt.Sprintf("Player %s (ID: %d) timed out, closing connection", player.Name, player.Id))
 
