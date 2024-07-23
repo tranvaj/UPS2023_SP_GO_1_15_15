@@ -24,7 +24,7 @@ This project is a multiplayer Tic-Tac-Toe game developed in Go and Python, desig
 - `go.mod`: Defines the Go module and its dependencies.
 - `main.go`: The entry point for the server application.
 - `readme.md`: This file, providing an overview of the project.
-- 'KIV_UPS_SP.pdf': Documentation of this project written in Czech language.
+- `KIV_UPS_SP.pdf`: Documentation of this project written in Czech language.
 
 ## Getting Started
 
